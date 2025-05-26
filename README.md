@@ -12,6 +12,8 @@ Using the V2 legacy mappers in SketchUp, you can specify what type of element to
     - Simple rectangular prisms
     - Walls must be perfectly vertical (no slants)
     - Walls cannot have doors, windows, cutouts, extrusions, etc.
+    - Wall must be a group or component in SketchUp when exporting to Speckle
+    - Wall must not have a perfect square base
     - Can be elevated / vertically offset
 
 - L or V shaped walls:
