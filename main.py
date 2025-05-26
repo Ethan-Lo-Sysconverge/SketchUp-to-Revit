@@ -178,7 +178,7 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
             # Push the Revit data to Speckle
             automate_context.create_new_version_in_project(
                 root_object=Base(**revit_data),
-                model_name='Speckle Automate Models',
+                model_name='Speckle Automate: SketchUp to Revit',
                 version_message="Speckle Automate created version for :"
                 + str(raw_speckle_data.id),
                 # a
