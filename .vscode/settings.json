@@ -5,5 +5,9 @@
     "stringcase",
     "typer"
   ],
-  "python.defaultInterpreterPath": ".venv/bin/python"
+  "python.defaultInterpreterPath": ".venv/bin/python",
+  "files.associations": {
+    "*.ttml": "xml",
+    "*.ttss": "css"
+  }
 }

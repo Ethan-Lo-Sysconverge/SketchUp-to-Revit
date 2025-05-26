@@ -1,16 +1,15 @@
-"""This module contains the function's business logic.
-
-Use the automation_context module to wrap your function in an Automate context helper.
+"""This module contains the function's main logic.
 """
 
-from pydantic import Field, SecretStr
+from pydantic import Field
 from speckle_automate import (
     AutomateBase,
     AutomationContext,
     execute_automate_function,
 )
 
-from flatten import flatten_base
+# from flatten import flatten_base
+from RevitWall import *
 
 
 class FunctionInputs(AutomateBase):
@@ -21,83 +20,187 @@ class FunctionInputs(AutomateBase):
     https://docs.pydantic.dev/latest/usage/models/
     """
 
-    # An example of how to use secret values.
-    whisper_message: SecretStr = Field(title="This is a secret message")
-    forbidden_speckle_type: str = Field(
-        title="Forbidden speckle type",
-        description=(
-            "If a object has the following speckle_type,"
-            " it will be marked with an error."
-        ),
+    Clicky_box: bool = Field(
+        default=False,
+        title="Clicky box 📦 (Function parameter)",
+        description="A function parameter is required to update function versions/releases. This box does nothing.",        
     )
 
 
-def automate_function(
-    automate_context: AutomationContext,
-    function_inputs: FunctionInputs,
-) -> None:
-    """This is an example Speckle Automate function.
 
-    Args:
-        automate_context: A context-helper object that carries relevant information
-            about the runtime context of this function.
-            It gives access to the Speckle project data that triggered this run.
-            It also has convenient methods for attaching result data to the Speckle model.
-        function_inputs: An instance object matching the defined schema.
+def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: FunctionInputs) -> None:
+    """Main function to run the automation.
     """
-    # The context provides a convenient way to receive the triggering version.
-    version_root_object = automate_context.receive_version()
-
-    objects_with_forbidden_speckle_type = [
-        b
-        for b in flatten_base(version_root_object)
-        if b.speckle_type == function_inputs.forbidden_speckle_type
-    ]
-    count = len(objects_with_forbidden_speckle_type)
-
-    if count > 0:
-        # This is how a run is marked with a failure cause.
-        automate_context.attach_error_to_objects(
-            category="Forbidden speckle_type"
-            f" ({function_inputs.forbidden_speckle_type})",
-            object_ids=[o.id for o in objects_with_forbidden_speckle_type if o.id],
-            message="This project should not contain the type: "
-            f"{function_inputs.forbidden_speckle_type}",
+    try:
+        import json
+        from specklepy.serialization.base_object_serializer import (
+            BaseObjectSerializer,
+            Base,
         )
-        automate_context.mark_run_failed(
-            "Automation failed: "
-            f"Found {count} object that have one of the forbidden speckle types: "
-            f"{function_inputs.forbidden_speckle_type}"
+        from Speckle_SketchUp_mapper import mapping_categories
+
+        raw_speckle_data = automate_context.receive_version()
+        client = automate_context.speckle_client
+
+        speckle_data = json.loads(
+            BaseObjectSerializer().write_json(raw_speckle_data)[1]
+        )
+        # automate_context.attach_info_to_objects("Speckle Data: \n", str(speckle_data), "\n :Speckle Data")
+        # logging.info('Start of Speckle Data\n')
+        # # logging.info(speckle_data)
+        # logging.info('\nEnd of Speckle Data\n')
+        # automate_context.context_view
+        failed = False
+
+        # Create the Revit friendly data to push to Speckle
+        if "name" in speckle_data and speckle_data["name"] == "Sketchup Model":
+
+            match mapping_categories[speckle_data["elements"][0]["category"]]: # switch for different types of elements
+
+                case "Walls":
+
+                    from shapely.geometry.polygon import Polygon
+                    from pygeoops import centerline
+
+                    walls = []
+                    errors = []
+
+                    for element in speckle_data["elements"]:  # Loop for multiple walls
+                        if (
+                            element["speckle_type"]
+                            == "Objects.BuiltElements.Revit.DirectShape"
+                        ):
+
+                            vertices = remove_duplicates(
+                                list(
+                                    get_coordinates_from_list(
+                                        element["baseGeometries"][0]["vertices"]
+                                    )
+                                )
+                            )
+
+                            # Getting the coordinates of the vertices
+                            vertices.sort(key=lambda x: x[2])
+
+                            base_polygon = []
+                            for vertex in vertices:  # Only get the base polygon of the wall
+                                if vertex[2] == vertices[0][2]:
+                                    base_polygon.append(vertex[0:2])
+
+                            # Get the centerline of the polygon to use as the baseLine
+                            try:
+                                base_polygon = Polygon(
+                                    construct_polygon_from_points(base_polygon)
+                                )
+
+                                baseLine_raw = centerline(base_polygon, extend=True) # work with pygeoops version 0.5.0.post1
+                                baseLine_cooked = list(baseLine_raw.coords)  # type: ignore
+
+                                # Split the baseLine into straight line segments for Revit
+                                baseLines = []
+                                for segment in range(len(baseLine_cooked) - 1):
+                                    baseLines.append(
+                                        [baseLine_cooked[segment], baseLine_cooked[segment + 1]]
+                                    )
+
+                                for baseLine in baseLines:  # Loop for multiple baseLines
+
+                                    # Add the Revit formatted data to the walls list
+                                    if (
+                                        "name" in element
+                                        and (
+                                            element["name"] != "<Mixed>"
+                                            or not str(element["name"]).isspace()
+                                        )
+                                        and element["name"] != ""
+                                    ):
+                                        walls.append(
+                                            revit_wall_data(
+                                                units=element["units"],
+                                                baseLine_start=[
+                                                    baseLine[0][0],
+                                                    baseLine[0][1],
+                                                    vertices[0][2],
+                                                ],
+                                                baseLine_end=[
+                                                    baseLine[1][0],
+                                                    baseLine[1][1],
+                                                    vertices[0][2],
+                                                ],
+                                                baseLine_length=baseLine_raw.length,  # type: ignore
+                                                baseOffset=0,
+                                                height=vertices[-1][2] - vertices[0][2],
+                                                type=element["name"],
+                                            )
+                                        )
+                                    else:
+                                        walls.append(
+                                            revit_wall_data(
+                                                units=element["units"],
+                                                baseLine_start=[
+                                                    baseLine[0][0],
+                                                    baseLine[0][1],
+                                                    vertices[0][2],
+                                                ],
+                                                baseLine_end=[
+                                                    baseLine[1][0],
+                                                    baseLine[1][1],
+                                                    vertices[0][2],
+                                                ],
+                                                baseLine_length=baseLine_raw.length,  # type: ignore
+                                                baseOffset=0,
+                                                height=vertices[-1][2] - vertices[0][2],
+                                            )
+                                        )
+                            except Exception as e:
+                                errors.append(
+                                    {
+                                        "Error": "There was an error while creating the Revit data.",
+                                        "Element": element,
+                                        "Error Message": str(e),
+                                    }
+                                )
+                                failed = True
+
+                    # Create the final Revit wall package
+                    if len(walls) > 0:
+
+                        revit_data = revit_wall_package(*walls)
+                    else:
+                        revit_data = {
+                            "Error": errors
+                        }
+
+                # case '':
+                case _:
+                    pass
+
+            # Push the Revit data to Speckle
+            automate_context.create_new_version_in_project(
+                root_object=Base(**revit_data),
+                model_name='Speckle Automate Models',
+                version_message="Speckle Automate created version for :"
+                + str(raw_speckle_data.id),
+                # a
+            )
+
+        automate_context.mark_run_success(
+            "Automation completed successfully.\n"
+            + str(automate_context.automation_run_data)
         )
 
-        # Set the automation context view to the original model/version view
-        # to show the offending objects.
-        automate_context.set_context_view()
+    except Exception as e:
+        print(f"Error: {e}")
+        automate_context.mark_run_failed("Automation failed: \n" f"Error: {e}")
 
-    else:
-        automate_context.mark_run_success("No forbidden types found.")
+    finally:
+        if failed:
+            automate_context.mark_run_exception('There were errors creating the Revit data from the objects.')
 
-    # If the function generates file results, this is how it can be
-    # attached to the Speckle project/model
-    # automate_context.store_file_result("./report.pdf")
-
-
-def automate_function_without_inputs(automate_context: AutomationContext) -> None:
-    """A function example without inputs.
-
-    If your function does not need any input variables,
-     besides what the automation context provides,
-     the inputs argument can be omitted.
-    """
-    pass
 
 
 # make sure to call the function with the executor
 if __name__ == "__main__":
     # NOTE: always pass in the automate function by its reference; do not invoke it!
 
-    # Pass in the function reference with the inputs schema to the executor.
-    execute_automate_function(automate_function, FunctionInputs)
-
-    # If the function has no arguments, the executor can handle it like so
-    # execute_automate_function(automate_function_without_inputs)
+    execute_automate_function(SketchUp_to_Revit, FunctionInputs)  
