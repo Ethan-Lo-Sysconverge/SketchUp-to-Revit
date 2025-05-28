@@ -198,7 +198,7 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
 
     finally:
         if failed:
-            automate_context.mark_run_exception('There were errors creating the Revit data from the objects.')
+            automate_context.mark_run_exception(f'There were errors creating the Revit data from the objects.\n{str(errors)}')
 
 
 

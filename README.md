@@ -9,18 +9,14 @@ Using the V2 legacy mappers in SketchUp, you can specify what type of element to
 ### Supported elements
 
 - Simple walls:
-    - Simple rectangular prisms
     - Walls must be perfectly vertical (no slants)
     - Walls cannot have doors, windows, cutouts, extrusions, etc.
     - Wall must be a group or component in SketchUp when exporting to Speckle
     - Wall must not have a perfect square base
+    - Walls can be 'bent' or have multiple 'arms' (L, N, M shapes, etc)
+        - Arms must be >3x wall width to ensure accuracy
+    - Works best with walls of constant width
+    - Must have no curved (even slightly) sections
     - Can be elevated / vertically offset
-
-- L or V shaped walls:
-    - Must have a base polygon with 6 vertices
-    - 1 bend only
-    - Wall 'arms' must be >3x the wall width
-    - Works best for arms of constant width
-    - Same conditions as simple walls
 
 Please be reasonable with what you are trying to import. If needed, split complex walls into simple ones.
