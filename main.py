@@ -155,11 +155,12 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                                             )
                                         )
                             except Exception as e:
+                                import traceback
                                 errors.append(
                                     {
                                         "Error": "There was an error while creating the Revit data.",
                                         "Element": element,
-                                        "Error Message": str(e.with_traceback()),
+                                        "Error Message": f"{e}. \n\n Traceback: {traceback.format_exc()}",
                                         "Base Polygon": base_polygon,
                                     }
                                 )
