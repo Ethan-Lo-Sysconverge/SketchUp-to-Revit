@@ -91,7 +91,7 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                             try:
                                 base_polygon = Polygon(
                                     construct_polygon_from_points(base_polygon)
-                                )
+                                ) 
 
                                 baseLine_raw = centerline(base_polygon, extend=True) # work with pygeoops version 0.5.0.post1
                                 baseLine_cooked = list(baseLine_raw.coords)  # type: ignore
