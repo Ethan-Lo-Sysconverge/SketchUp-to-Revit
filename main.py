@@ -86,7 +86,6 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                             for vertex in vertices:  # Only get the base polygon of the wall
                                 if vertex[2] == vertices[0][2]:
                                     base_polygon.append(vertex[0:2])
-                            print(f"Base Polygon: {base_polygon}")
 
                             # Get the centerline of the polygon to use as the baseLine
                             try:
@@ -161,6 +160,7 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                                         "Error": "There was an error while creating the Revit data.",
                                         "Element": element,
                                         "Error Message": str(e),
+                                        "Base Polygon": base_polygon,
                                     }
                                 )
                                 failed = True
