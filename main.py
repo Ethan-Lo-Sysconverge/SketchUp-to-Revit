@@ -159,7 +159,7 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                                     {
                                         "Error": "There was an error while creating the Revit data.",
                                         "Element": element,
-                                        "Error Message": str(e),
+                                        "Error Message": str(e.with_traceback()),
                                         "Base Polygon": base_polygon,
                                     }
                                 )
