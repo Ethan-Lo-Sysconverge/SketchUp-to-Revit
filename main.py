@@ -89,9 +89,11 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
 
                             # Get the centerline of the polygon to use as the baseLine
                             try:
-                                base_polygon = Polygon(
-                                    construct_polygon_from_points(base_polygon)
-                                ) 
+                                from shapely import concave_hull
+                                # base_polygon = Polygon(
+                                #     construct_polygon_from_points(base_polygon)
+                                # ) 
+                                base_polygon = concave_hull(Polygon(base_polygon))
 
                                 baseLine_raw = centerline(base_polygon, extend=True) # work with pygeoops version 0.5.0.post1
                                 baseLine_cooked = list(baseLine_raw.coords)  # type: ignore

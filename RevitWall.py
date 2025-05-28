@@ -155,58 +155,58 @@ def revit_wall_package(*walls) -> dict:
     return outputPackage
 
 
-def construct_polygon_from_points(points: list):
-    """
-    Constructs a polygon from a list of points. Works only for simple quadrilaterals and V or L shapes.
+# def construct_polygon_from_points(points: list):
+#     """
+#     Constructs a polygon from a list of points. Works only for simple quadrilaterals and V or L shapes.
 
-    Checks for the number of points (<6 or not) and sorts points by angle relative to reflex point if applicable. Then brute forces a polygon using area minimization, if applicable.
-    """
-    from shapely.geometry.polygon import Polygon
+#     Checks for the number of points (<6 or not) and sorts points by angle relative to reflex point if applicable. Then brute forces a polygon using area minimization, if applicable.
+#     """
+#     from shapely.geometry.polygon import Polygon
 
-    if len(points) < 6:
-        return Polygon(Polygon(points).convex_hull.exterior.coords)  # type: ignore
+#     if len(points) < 6:
+#         return Polygon(Polygon(points).convex_hull.exterior.coords)  # type: ignore
 
-    else:
-        p = Polygon(points)
-        # Get the missing reflex point
-        polygon_list = list(p.exterior.coords)
-        polygon_convex_hull_list = list(p.convex_hull.exterior.coords)  # type: ignore
-        missing_points = []
-        for i in polygon_list:
-            if i not in polygon_convex_hull_list:
-                missing_points.append(i)
+#     else:
+#         p = Polygon(points)
+#         # Get the missing reflex point
+#         polygon_list = list(p.exterior.coords)
+#         polygon_convex_hull_list = list(p.convex_hull.exterior.coords)  # type: ignore
+#         missing_points = []
+#         for i in polygon_list:
+#             if i not in polygon_convex_hull_list:
+#                 missing_points.append(i)
 
-        if len(missing_points) != 1:
-            return None
+#         if len(missing_points) != 1:
+#             return None
 
-        reflex_point = missing_points[0]
-        del missing_points
+#         reflex_point = missing_points[0]
+#         del missing_points
 
-        # Sort the polygon points by angle relative to the reflex point
-        def angle_from_point(point, center):
-            from math import atan2, degrees, pi
+#         # Sort the polygon points by angle relative to the reflex point
+#         def angle_from_point(point, center):
+#             from math import atan2, degrees, pi
 
-            gap = atan2(point[1] - center[1], point[0] - center[0])
-            if gap < 0:
-                gap += 2 * pi
-            return degrees(gap)
+#             gap = atan2(point[1] - center[1], point[0] - center[0])
+#             if gap < 0:
+#                 gap += 2 * pi
+#             return degrees(gap)
 
-        sorted_points = [
-            [i, angle_from_point(i, reflex_point)] for i in polygon_convex_hull_list
-        ]
-        sorted_points.sort(key=lambda x: x[1])
+#         sorted_points = [
+#             [i, angle_from_point(i, reflex_point)] for i in polygon_convex_hull_list
+#         ]
+#         sorted_points.sort(key=lambda x: x[1])
 
-        areas = []
-        sorted_points = [i[0] for i in sorted_points]
+#         areas = []
+#         sorted_points = [i[0] for i in sorted_points]
 
-        for i in range(len(sorted_points)):
-            temp = sorted_points[:i] + [reflex_point] + sorted_points[i:]
-            if Polygon(temp).is_valid:
-                areas.append(Polygon(temp).area)
+#         for i in range(len(sorted_points)):
+#             temp = sorted_points[:i] + [reflex_point] + sorted_points[i:]
+#             if Polygon(temp).is_valid:
+#                 areas.append(Polygon(temp).area)
 
-        sorted_points.insert(areas.index(min(areas)), reflex_point)
+#         sorted_points.insert(areas.index(min(areas)), reflex_point)
 
-        return Polygon(sorted_points)
+#         return Polygon(sorted_points)
 
 def from_list_get(list: list, attribute, position: int = -1) -> list:
     l = []
