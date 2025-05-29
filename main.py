@@ -8,7 +8,6 @@ from speckle_automate import (
     execute_automate_function,
 )
 
-# from flatten import flatten_base
 from RevitWall import *
 
 
@@ -20,17 +19,22 @@ class FunctionInputs(AutomateBase):
     https://docs.pydantic.dev/latest/usage/models/
     """
 
-    Clicky_box: bool = Field(
-        default=False,
-        title="Clicky box 📦 (Function parameter)",
-        description="A function parameter is required to update function versions/releases. This box does nothing.",        
+    tolerance: float = Field(
+        default=1e-6,
+        title="Tolerance 📏",
+        description=(
+            "The tolerance used to determine if two values are equal. Values that differ by less than this tolerance will be considered equal."
+        ),
+        ge=0.0,  # Ensure tolerance is non-negative
+        le=1e6,  # Arbitrary upper limit for tolerance
+        multiple_of=1e-6,  # Ensure tolerance is a multiple of 1e-6
     )
 
 
 
 def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: FunctionInputs) -> None:
-    """Main function to run the automation.
-    """
+    """Main function to run the automation."""
+
     try:
         import json
         from specklepy.serialization.base_object_serializer import (
@@ -45,11 +49,6 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
         speckle_data = json.loads(
             BaseObjectSerializer().write_json(raw_speckle_data)[1]
         )
-        # automate_context.attach_info_to_objects("Speckle Data: \n", str(speckle_data), "\n :Speckle Data")
-        # logging.info('Start of Speckle Data\n')
-        # # logging.info(speckle_data)
-        # logging.info('\nEnd of Speckle Data\n')
-        # automate_context.context_view
         failed = False
 
         # Create the Revit friendly data to push to Speckle
@@ -70,13 +69,15 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                             element["speckle_type"]
                             == "Objects.BuiltElements.Revit.DirectShape"
                         ):
+                            tol = function_inputs.tolerance
 
                             vertices = remove_duplicates(
                                 list(
                                     get_coordinates_from_list(
                                         element["baseGeometries"][0]["vertices"]
                                     )
-                                )
+                                ),
+                                tol
                             )
 
                             # Getting the coordinates of the vertices
@@ -84,15 +85,16 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
 
                             base_polygon = []
                             for vertex in vertices:  # Only get the base polygon of the wall
-                                if vertex[2] == vertices[0][2]:
+                                if (
+                                    vertex[2] > vertices[0][2] - tol
+                                    and vertex[2] < vertices[-1][2] + tol
+                                ):
                                     base_polygon.append(vertex[0:2])
 
                             # Get the centerline of the polygon to use as the baseLine
                             try:
                                 from shapely import concave_hull
-                                # base_polygon = Polygon(
-                                #     construct_polygon_from_points(base_polygon)
-                                # ) 
+
                                 base_polygon = concave_hull(Polygon(base_polygon))
 
                                 baseLine_raw = centerline(base_polygon, extend=True) # work with pygeoops version 0.5.0.post1
@@ -175,7 +177,6 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                             "Error": errors
                         }
 
-                # case '':
                 case _:
                     pass
 

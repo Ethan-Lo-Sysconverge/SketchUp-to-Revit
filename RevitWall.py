@@ -235,15 +235,31 @@ def get_coordinates_from_list(raw_coords: list) -> list[list[float]]:
     return [raw_coords[i : i + 3] for i in range(0, len(raw_coords), 3)]
 
 
-def remove_duplicates(l: list) -> list:
+def remove_duplicates(l: list, tol: float = 1e-6) -> list:
+    """
+    Remove duplicate points within a tolerance.
+
+    Args:
+        l: List of coordinate points (any dimension)
+        tol: Tolerance for considering points as duplicates
+
+    Returns:
+        List with duplicates removed
+    """
+    if not l:
+        return []
+
+    # Keep track of points we've seen, rounded to tolerance
     seen = set()
     result = []
 
     for item in l:
-        t = tuple(item)
+        # Round to the nearest tolerance increment
+        rounded = tuple(round(coord / tol) * tol for coord in item)
 
-        if t not in seen:
-            seen.add(t)
+        if rounded not in seen:
+            seen.add(rounded)
+            # Keep the original point, not the rounded version
             result.append(item)
 
     return result
