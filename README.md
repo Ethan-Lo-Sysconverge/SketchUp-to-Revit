@@ -16,7 +16,7 @@ Using the V2 legacy mappers in SketchUp, you can specify what type of element to
     - Walls can be 'bent' or have multiple 'arms' (L, N, M shapes, etc)
         - Arms must be >3x wall width to ensure accuracy
     - Works best with walls of constant width
-    - Must have no curved (even slightly) sections
+    - Must have no (even slightly) curved sections
     - Can be elevated / vertically offset
 
 Please be reasonable with what you are trying to import. If needed, split complex walls into simple ones.

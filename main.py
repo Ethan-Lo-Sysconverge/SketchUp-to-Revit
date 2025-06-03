@@ -30,6 +30,18 @@ class FunctionInputs(AutomateBase):
         multiple_of=1e-6,  # Ensure tolerance is a multiple of 1e-6
     )
 
+    reference_level: str = Field(
+        default="Level 0",
+        title="Reference Level Name 🏗️",
+        description=(
+            "The name of the base / reference level with 0 elevation in Revit. The default is 'Level 0' for a new project. "
+            "All elements will be created relative to this level's elevation. If you do not change the name, it WILL OVERRIDE the "
+            "the reference level name in the Revit project."
+        ),
+        min_length=1, # Ensure the level name is not empty
+        max_length=200, # Arbitrary upper limit for level name length
+    )
+
 
 
 def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: FunctionInputs) -> None:
@@ -132,9 +144,10 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                                                     vertices[0][2],
                                                 ],
                                                 baseLine_length=baseLine_raw.length,  # type: ignore
-                                                baseOffset=0,
+                                                baseOffset=vertices[0][2],
                                                 height=vertices[-1][2] - vertices[0][2],
                                                 type=element["name"],
+                                                level_name=function_inputs.reference_level,
                                             )
                                         )
                                     else:
@@ -152,8 +165,9 @@ def SketchUp_to_Revit(automate_context: AutomationContext, function_inputs: Func
                                                     vertices[0][2],
                                                 ],
                                                 baseLine_length=baseLine_raw.length,  # type: ignore
-                                                baseOffset=0,
+                                                baseOffset=vertices[0][2],
                                                 height=vertices[-1][2] - vertices[0][2],
+                                                level_name=function_inputs.reference_level,
                                             )
                                         )
                             except Exception as e:
