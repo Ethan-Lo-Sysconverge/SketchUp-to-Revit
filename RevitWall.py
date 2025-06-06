@@ -15,6 +15,7 @@ def revit_wall_data(
     level_referenceOnly=False,
     phaseCreated="New Construction",
     structural=False,
+    comment: str | None = None,
 ) -> dict:
     """
     Formats the input data so it can be pushed to Speckle and received as a native Revit wall.
@@ -125,12 +126,32 @@ def revit_wall_data(
         "type": type,
         "units": units,
         # "worksetId": "0",
+        "parameters": {
+            "id": None,
+            "speckle_type": "Base",
+            "totalChildrenCount": 0,
+            "ALL_MODEL_INSTANCE_COMMENTS": {
+                "id": None,
+                "speckle_type": "Objects.BuiltElements.Revit.Parameter",
+                "totalChildrenCount": 0,
+                "applicationId": None,
+                "applicationInternalName": "ALL_MODEL_INSTANCE_COMMENTS",
+                "applicationUnit": None,
+                "applicationUnitType": None,
+                "IsReadOnly": False,
+                "isShared": False,
+                "isTypeParameter": False,
+                "name": "Comments",
+                "units": None,
+                "value": comment if comment else None,
+            },
+        },
     }
 
     return outputDict
 
 
-def revit_wall_package(*walls) -> dict:
+def speckle_data_package(*walls) -> dict:
     """
     Formats the input data so it can be pushed to Speckle and received as a native Revit wall.
     INPUTS:
@@ -207,6 +228,7 @@ def revit_wall_package(*walls) -> dict:
 #         sorted_points.insert(areas.index(min(areas)), reflex_point)
 
 #         return Polygon(sorted_points)
+
 
 def from_list_get(list: list, attribute, position: int = -1) -> list:
     l = []
