@@ -73,13 +73,13 @@ def SketchUp_to_Revit(
                 if element["speckle_type"] == "Objects.BuiltElements.Revit.DirectShape":
 
                     match mapping_categories[
-                        speckle_data["elements"][0]["category"]
+                        element["category"]
                     ]:  # switch for different types of elements
 
                         case "Walls":
 
                             from shapely.geometry.polygon import Polygon
-                            from pygeoops import centerline  
+                            from pygeoops import centerline
 
                             errors = []
 
